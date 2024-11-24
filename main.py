@@ -8,6 +8,7 @@ import tty
 import select
 
 import time
+import psutil
 
 cat = [[
     "⠀⠀⡄⠀⣀⣰⣳⡃⠀",
@@ -26,15 +27,23 @@ cat = [[
     "⠀⠉⠹⠛⠛⠟⠀⠀⠀"
 ]]
 cnt = 0
-def catBar(rows, cols):
+def catBar(rows, cols, cpu):
     global cnt
     cnt = (cnt + 1) % 4
+    mem = psutil.virtual_memory().percent
     text = ""
     text += "\033[s"
     text += "\033[0m\033[30m\033[47m"
     text += f"\033[r\033[{rows-1};{1}H"
-    text += f"{cat[cnt][0]}" + (" " * (cols-9))
-    text += f"\n\r{cat[cnt][1]}" + (" " * (cols-9))
+
+    text += f"{cat[cnt][0]}"
+    text += f"  CPU:{cpu:5.1f}%"
+    text += (" " * (cols-25))
+    text += f"\033[{rows-0};{1}H"
+    text += f"{cat[cnt][1]}"
+    text += f"  MEM:{mem:5.1f}%"
+    text += (" " * (cols-25))
+
     text += f"\033[1;{rows-2}r"
     text += f"\033[0m"
     text += f"\033[u"
@@ -46,12 +55,15 @@ cols, rows = os.get_terminal_size()
 pid = os.fork()
 if pid != 0:    #親　猫が走る
     while 1:
-        time.sleep(0.1)
-        text = catBar(rows, cols)
+        cpu_total = psutil.cpu_percent(percpu=True)
+        cpu = sum(cpu_total) / len(cpu_total)
+        text = catBar(rows, cols, cpu)
         os.write(sys.stdout.fileno(), text.encode())
         pid, _ = os.waitpid(pid, os.WNOHANG)
         if pid != 0:
             break
+        else:
+            time.sleep(0.2 - (0.19 * (cpu/100)))
 
 else:
     master_fd, slave_fd = pty.openpty()
