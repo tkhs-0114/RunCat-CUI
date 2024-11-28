@@ -63,7 +63,7 @@ if pid != 0:    #親　猫が走る
         if pid != 0:
             break
         else:
-            time.sleep(0.2 - (0.19 * (cpu/100)))
+            time.sleep(abs(0.1 - (0.19 * (cpu/100))))
 
 else:
     master_fd, slave_fd = pty.openpty()
